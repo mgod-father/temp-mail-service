@@ -1,0 +1,1 @@
+{"root":["./client/src/app.tsx","./client/src/api.ts","./client/src/main.tsx","./server/src/app.ts","./server/src/config.ts","./server/src/index.ts","./server/src/types.ts","./server/src/utils.ts","./server/src/db/migrate.ts","./server/src/store/memorystore.ts","./server/src/store/postgresstore.ts","./vite.config.ts"],"version":"5.9.3"}
