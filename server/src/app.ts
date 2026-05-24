@@ -1,5 +1,6 @@
 import cors from "cors";
 import express from "express";
+import path from "path";
 import { config } from "./config";
 import type { MailStore } from "./types";
 import { buildEmail, normalizeEmail } from "./utils";
@@ -9,6 +10,7 @@ export function createApp(store: MailStore) {
 
   app.use(cors());
   app.use(express.json({ limit: "2mb" }));
+  app.use(express.static(path.join(process.cwd(), "dist")));
 
   app.get("/api/domains", (_req, res) => {
     res.json({ domains: config.domains });
@@ -68,6 +70,10 @@ export function createApp(store: MailStore) {
 
     if (!email) return res.status(404).json({ error: "Inbox not found." });
     res.json({ email: serializeEmail(email) });
+  });
+
+  app.get(/^\/(?!api\/).*/, (_req, res) => {
+    res.sendFile(path.join(process.cwd(), "dist", "index.html"));
   });
 
   return app;
