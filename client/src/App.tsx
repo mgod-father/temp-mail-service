@@ -204,9 +204,18 @@ export default function App() {
                       <Trash2 size={17} />
                     </button>
                   </div>
-                  <div className="whitespace-pre-wrap rounded-md bg-slate-50 p-4 text-sm leading-6">
-                    {selected.bodyText || stripHtml(selected.bodyHtml) || "No body."}
-                  </div>
+                  {selected.bodyHtml ? (
+                    <iframe
+                      className="min-h-[300px] w-full rounded-md border border-slate-200 bg-white"
+                      sandbox="allow-same-origin"
+                      srcDoc={selected.bodyHtml}
+                      title="Email HTML content"
+                    />
+                  ) : (
+                    <div className="whitespace-pre-wrap rounded-md bg-slate-50 p-4 text-sm leading-6">
+                      {selected.bodyText || "No body."}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="grid h-full place-items-center text-center text-slate-500">
@@ -219,8 +228,4 @@ export default function App() {
       </section>
     </main>
   );
-}
-
-function stripHtml(html: string) {
-  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
