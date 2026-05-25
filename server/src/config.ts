@@ -1,9 +1,11 @@
 import "dotenv/config";
 
+const defaultDomains = ["only4traders.tech", "xchartingview.com"];
+
 export const config = {
   port: Number(process.env.PORT ?? 4000),
   databaseUrl: process.env.DATABASE_URL ?? "",
-  domains: (process.env.ALLOWED_DOMAINS ?? "only4traders.tech")
+  domains: (process.env.ALLOWED_DOMAINS ?? defaultDomains.join(","))
     .split(",")
     .map((domain) => domain.trim().toLowerCase())
     .filter(Boolean),

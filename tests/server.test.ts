@@ -20,6 +20,17 @@ describe("temp mail api", () => {
     expect(second.body.inbox.id).toBe(first.body.inbox.id);
   });
 
+  it("allows xchartingview.com inboxes", async () => {
+    const app = createApp(createMemoryStore());
+
+    const response = await request(app)
+      .post("/api/inbox/create")
+      .send({ name: "john", domain: "xchartingview.com" });
+
+    expect(response.status).toBe(200);
+    expect(response.body.inbox.emailAddress).toBe("john@xchartingview.com");
+  });
+
   it("stores webhook email for matching inbox", async () => {
     const app = createApp(createMemoryStore());
     await request(app).post("/api/inbox/create").send({ name: "mail", domain: "only4traders.tech" });

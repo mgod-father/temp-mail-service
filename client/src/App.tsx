@@ -2,12 +2,12 @@ import { Copy, Inbox as InboxIcon, Mail, RefreshCw, Trash2 } from "lucide-react"
 import { useEffect, useMemo, useState } from "react";
 import { api, type Email, type InboxPayload } from "./api";
 
-const fallbackDomain = "only4traders.tech";
+const fallbackDomains = ["only4traders.tech", "xchartingview.com"];
 
 export default function App() {
-  const [domains, setDomains] = useState([fallbackDomain]);
+  const [domains, setDomains] = useState(fallbackDomains);
   const [name, setName] = useState("");
-  const [domain, setDomain] = useState(fallbackDomain);
+  const [domain, setDomain] = useState(fallbackDomains[0]);
   const [data, setData] = useState<InboxPayload | null>(null);
   const [selected, setSelected] = useState<Email | null>(null);
   const [error, setError] = useState("");
@@ -26,14 +26,7 @@ export default function App() {
   useEffect(() => {
     if (!data) return;
 
-    const refresh = window.setInterval(() => {
-      api.getInbox(data.inbox.emailAddress)
-        .then((next) => {
-          setData(next);
-          setSelected((current) => next.emails.find((email) => email.id === current?.id) ?? null);
-        })
-        .catch(() => setData(null));
-    }, 5000);
+    const refresh = window.setInterval(refreshInbox, 5000);
 
     return () => window.clearInterval(refresh);
   }, [data?.inbox.emailAddress]);
@@ -68,6 +61,19 @@ export default function App() {
     if (!data) return;
     const { inbox } = await api.extendInbox(data.inbox.emailAddress);
     setData({ ...data, inbox });
+  }
+
+  async function refreshInbox() {
+    if (!data) return;
+
+    try {
+      const next = await api.getInbox(data.inbox.emailAddress);
+      setData(next);
+      setSelected((current) => next.emails.find((email) => email.id === current?.id) ?? next.emails[0] ?? null);
+    } catch {
+      setData(null);
+      setSelected(null);
+    }
   }
 
   async function deleteInbox() {
@@ -160,7 +166,13 @@ export default function App() {
 
               <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
                 <span className="font-semibold">Inbox</span>
-                <RefreshCw size={16} className="text-slate-500" />
+                <button
+                  aria-label="Refresh inbox"
+                  className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-50"
+                  onClick={refreshInbox}
+                >
+                  <RefreshCw size={16} />
+                </button>
               </div>
 
               <div className="max-h-[460px] overflow-auto">
