@@ -35,8 +35,27 @@ describe("temp mail api", () => {
     const inbox = await request(app).get("/api/inbox/mail@only4traders.tech");
 
     expect(webhook.status).toBe(200);
+    expect(webhook.body.email.bodyHtml).toBe("<p>Plain body</p>");
     expect(inbox.body.emails).toHaveLength(1);
     expect(inbox.body.emails[0].subject).toBe("Hello");
+    expect(inbox.body.emails[0].bodyHtml).toBe("<p>Plain body</p>");
+  });
+
+  it("accepts bodyHtml from webhook payloads", async () => {
+    const app = createApp(createMemoryStore());
+    await request(app).post("/api/inbox/create").send({ name: "html", domain: "only4traders.tech" });
+
+    await request(app).post("/api/webhook/email").send({
+      recipient: "html@only4traders.tech",
+      sender: "sender@test.com",
+      subject: "HTML",
+      text: "Plain body",
+      bodyHtml: "<h1>HTML body</h1>"
+    });
+
+    const inbox = await request(app).get("/api/inbox/html@only4traders.tech");
+
+    expect(inbox.body.emails[0].bodyHtml).toBe("<h1>HTML body</h1>");
   });
 
   it("extends an inbox by 15 minutes", async () => {

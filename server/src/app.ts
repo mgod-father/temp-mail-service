@@ -63,7 +63,7 @@ export function createApp(store: MailStore) {
         sender: String(req.body.sender ?? req.body.from ?? ""),
         subject: String(req.body.subject ?? ""),
         text: req.body.text,
-        html: req.body.html
+        html: req.body.html ?? req.body.bodyHtml ?? req.body.body_html
       },
       config.emailTtlMinutes
     );
