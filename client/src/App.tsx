@@ -1,4 +1,4 @@
-import { Copy, Inbox as InboxIcon, Mail, RefreshCw, Trash2 } from "lucide-react";
+import { Check, Copy, Inbox as InboxIcon, Mail, RefreshCw, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { api, type Email, type InboxPayload } from "./api";
 
@@ -12,6 +12,11 @@ export default function App() {
   const [selected, setSelected] = useState<Email | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [extending, setExtending] = useState(false);
+  const [extended, setExtended] = useState(false);
+  const [actionError, setActionError] = useState("");
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -50,6 +55,9 @@ export default function App() {
       const inbox = await api.createInbox(name, domain);
       setData(inbox);
       setSelected(inbox.emails[0] ?? null);
+      setActionError("");
+      setCopied(false);
+      setExtended(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create inbox.");
     } finally {
@@ -59,12 +67,28 @@ export default function App() {
 
   async function extendInbox() {
     if (!data) return;
-    const { inbox } = await api.extendInbox(data.inbox.emailAddress);
-    setData({ ...data, inbox });
+    setActionError("");
+    setExtended(false);
+    setExtending(true);
+
+    try {
+      const { inbox } = await api.extendInbox(data.inbox.emailAddress);
+      setData({ ...data, inbox });
+      setExtended(true);
+      window.setTimeout(() => setExtended(false), 1800);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Could not extend inbox.");
+    } finally {
+      setExtending(false);
+    }
   }
 
-  async function refreshInbox() {
+  async function refreshInbox(showFeedback = false) {
     if (!data) return;
+    if (showFeedback) {
+      setActionError("");
+      setRefreshing(true);
+    }
 
     try {
       const next = await api.getInbox(data.inbox.emailAddress);
@@ -73,6 +97,21 @@ export default function App() {
     } catch {
       setData(null);
       setSelected(null);
+    } finally {
+      if (showFeedback) setRefreshing(false);
+    }
+  }
+
+  async function copyAddress() {
+    if (!data) return;
+    setActionError("");
+
+    try {
+      await navigator.clipboard?.writeText(data.inbox.emailAddress);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setActionError("Could not copy email.");
     }
   }
 
@@ -147,31 +186,39 @@ export default function App() {
                   <strong className="break-all text-lg">{data.inbox.emailAddress}</strong>
                   <button
                     aria-label="Copy"
-                    className="grid h-9 w-9 place-items-center rounded-md border border-slate-300"
-                    onClick={() => navigator.clipboard?.writeText(data.inbox.emailAddress)}
+                    className="grid h-9 w-9 place-items-center rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50 disabled:border-emerald-200 disabled:text-emerald-700"
+                    disabled={copied}
+                    onClick={copyAddress}
                   >
-                    <Copy size={17} />
+                    {copied ? <Check size={17} /> : <Copy size={17} />}
                   </button>
                 </div>
+                {copied && <p className="mt-2 text-sm font-medium text-emerald-700">Copied</p>}
                 <div className="mt-4 flex flex-wrap gap-2">
                   <span className="rounded-md bg-slate-100 px-3 py-2 text-sm">Expires in {timeLeft}</span>
-                  <button className="rounded-md border border-slate-300 px-3 py-2 text-sm" onClick={extendInbox}>
-                    +15 min
+                  <button
+                    className="rounded-md border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50 disabled:opacity-60"
+                    disabled={extending}
+                    onClick={extendInbox}
+                  >
+                    {extending ? "Extending..." : extended ? "Extended" : "+15 min"}
                   </button>
                   <button className="rounded-md border border-red-200 px-3 py-2 text-sm text-red-600" onClick={deleteInbox}>
                     Delete
                   </button>
                 </div>
+                {actionError && <p className="mt-3 text-sm text-red-600">{actionError}</p>}
               </div>
 
               <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
                 <span className="font-semibold">Inbox</span>
                 <button
-                  aria-label="Refresh inbox"
-                  className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-50"
-                  onClick={refreshInbox}
+                  aria-label={refreshing ? "Refreshing inbox" : "Refresh inbox"}
+                  className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-60"
+                  disabled={refreshing}
+                  onClick={() => refreshInbox(true)}
                 >
-                  <RefreshCw size={16} />
+                  <RefreshCw className={refreshing ? "animate-spin" : ""} size={16} />
                 </button>
               </div>
 
@@ -185,7 +232,12 @@ export default function App() {
                   data.emails.map((email) => (
                     <button
                       key={email.id}
-                      className="block w-full border-b border-slate-100 p-4 text-left hover:bg-slate-50"
+                      aria-current={selected?.id === email.id ? "true" : undefined}
+                      className={`block w-full border-b p-4 text-left transition ${
+                        selected?.id === email.id
+                          ? "border-emerald-200 bg-emerald-50 ring-1 ring-inset ring-emerald-200"
+                          : "border-slate-100 hover:bg-slate-50"
+                      }`}
                       onClick={() => setSelected(email)}
                     >
                       <div className="flex items-start justify-between gap-2">

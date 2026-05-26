@@ -4,12 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev": "node api.js && concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "dev:server": "tsx watch server/src/index.ts",
     "dev:client": "vite --host 0.0.0.0",
-    "build": "tsc -b && vite build",
+    "build": "node api.js && tsc -b && vite build",
     "test": "vitest run --config vitest.config.ts",
-    "start": "tsx server/src/index.ts",
+    "start": "node api.js && tsx server/src/index.ts",
     "db:migrate": "tsx server/src/db/migrate.ts"
   },
   "dependencies": {
